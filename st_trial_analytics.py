@@ -135,79 +135,76 @@ class TrialAnalytics:
         self.collection = None
 
     def connect(self):
-        """Établit la connexion à MongoDB avec gestion SSL améliorée."""
-        try:
-            # Configuration TLS optimale pour MongoDB Atlas (pymongo 4.x+)
-            client_options = {
-                "serverSelectionTimeoutMS": 30000,
-                "connectTimeoutMS": 30000,
-                "socketTimeoutMS": 30000,
-                "maxPoolSize": 10,
-                "retryWrites": True,
-                "w": "majority",
-                # Configuration TLS pour MongoDB Atlas
-                "tls": True,
-                "tlsAllowInvalidCertificates": True,
-                # Suppression de tlsInsecure pour éviter le conflit
-            }
-
-            self.client = MongoClient(self.uri, **client_options)
-            self.db = self.client[self.database]
-            self.collection = self.db.trials
-
-            # Test de la connexion
-            self.client.admin.command("ping")
-            st.success("✅ Connexion MongoDB réussie!")
-            return True
-
-        except Exception as e:
-            st.error(f"Erreur de connexion MongoDB: {e}")
-
-            # Essayer une connexion avec options TLS minimales
-            try:
-                st.info("🔄 Tentative avec options TLS minimales...")
-
-                minimal_tls_options = {
+        """Établit la connexion à MongoDB avec gestion SSL/TLS robuste."""
+        # Liste des stratégies de connexion à essayer
+        connection_strategies = [
+            {
+                "name": "Configuration TLS standard",
+                "options": {
+                    "serverSelectionTimeoutMS": 30000,
+                    "connectTimeoutMS": 30000,
+                    "socketTimeoutMS": 30000,
+                    "retryWrites": True,
+                    "w": "majority",
+                },
+            },
+            {
+                "name": "Configuration TLS avec certificats flexibles",
+                "options": {
                     "serverSelectionTimeoutMS": 30000,
                     "connectTimeoutMS": 30000,
                     "tls": True,
-                }
+                    "tlsAllowInvalidCertificates": True,
+                },
+            },
+            {
+                "name": "Configuration TLS insecure",
+                "options": {
+                    "serverSelectionTimeoutMS": 30000,
+                    "connectTimeoutMS": 30000,
+                    "tlsInsecure": True,
+                },
+            },
+            {
+                "name": "Configuration basique sans TLS explicite",
+                "options": {
+                    "serverSelectionTimeoutMS": 30000,
+                    "connectTimeoutMS": 30000,
+                },
+            },
+        ]
 
-                self.client = MongoClient(self.uri, **minimal_tls_options)
+        for strategy in connection_strategies:
+            try:
+                st.info(f"🔄 Tentative: {strategy['name']}...")
+
+                self.client = MongoClient(self.uri, **strategy["options"])
                 self.db = self.client[self.database]
                 self.collection = self.db.trials
 
-                # Test de la connexion
+                # Test de la connexion avec timeout court
                 self.client.admin.command("ping")
-                st.success("✅ Connexion TLS minimale réussie!")
+                st.success(f"✅ Connexion réussie avec: {strategy['name']}")
                 return True
 
-            except Exception as minimal_error:
-                st.error(f"Erreur connexion TLS minimale: {minimal_error}")
+            except Exception as e:
+                st.warning(f"❌ Échec {strategy['name']}: {str(e)[:200]}...")
+                # Fermer le client en cas d'échec
+                if hasattr(self, "client") and self.client:
+                    try:
+                        self.client.close()
+                    except:
+                        pass
+                continue
 
-                # Dernière tentative avec URI direct (laisse MongoDB gérer TLS)
-                try:
-                    st.info("🔄 Dernière tentative avec URI direct...")
-
-                    basic_options = {
-                        "serverSelectionTimeoutMS": 30000,
-                        "connectTimeoutMS": 30000,
-                    }
-
-                    self.client = MongoClient(self.uri, **basic_options)
-                    self.db = self.client[self.database]
-                    self.collection = self.db.trials
-
-                    # Test de la connexion
-                    self.client.admin.command("ping")
-                    st.success("✅ Connexion URI direct réussie!")
-                    return True
-
-                except Exception as basic_error:
-                    st.error(
-                        f"❌ Toutes les tentatives de connexion ont échoué: {basic_error}"
-                    )
-                    return False
+        # Si toutes les stratégies échouent
+        st.error("❌ Toutes les tentatives de connexion ont échoué")
+        st.error("💡 Suggestions:")
+        st.error("   1. Vérifiez que votre cluster MongoDB Atlas est actif")
+        st.error("   2. Vérifiez les informations d'authentification dans votre URI")
+        st.error("   3. Vérifiez que votre IP est autorisée dans MongoDB Atlas")
+        st.error("   4. Essayez de redémarrer votre cluster MongoDB Atlas")
+        return False
 
     def disconnect(self):
         """Ferme la connexion MongoDB."""
