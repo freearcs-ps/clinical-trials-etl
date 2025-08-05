@@ -1,0 +1,156 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Clinical Trial Schema",
+  "description": "Schéma de validation pour les données d'essais cliniques",
+  "type": "object",
+  "required": ["header", "summary", "trial_information", "locations"],
+  "properties": {
+    "header": {
+      "type": "object",
+      "required": ["euct_number"],
+      "properties": {
+        "title": { "type": "string" },
+        "euct_number": { "type": "string" },
+        "protocol_code": { "type": "string" }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "overall_trial_status": {
+          "type": "object",
+          "properties": {
+            "application_trial_status": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "member_state": { "type": "string" },
+                  "application_trial_status": { "type": "string" },
+                  "decision_date": { "type": "string", "format": "date" }
+                }
+              }
+            }
+          }
+        },
+        "applications": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": { "type": "string" }
+            }
+          }
+        },
+        "trial_information": {
+          "type": "object",
+          "required": ["medical_condition", "trial_phase"],
+          "properties": {
+            "medical_condition": { "type": "string" },
+            "trial_phase": { "type": "string" },
+            "transition_trial": { "type": "string" },
+            "sponsor": { "type": "string" },
+            "participants_type": { "type": "string" },
+            "age_range": { "type": "string" },
+            "locations": { "type": "string" },
+            "main_objective": { "type": "string" }
+          }
+        }
+      }
+    },
+    "trial_information": {
+      "type": "object",
+      "properties": {
+        "trial_details": {
+          "type": "object",
+          "properties": {
+            "inclusion_criteria": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "number": { "type": "integer" },
+                  "description": { "type": "string" }
+                }
+              }
+            },
+            "exclusion_criteria": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "number": { "type": "integer" },
+                  "description": { "type": "string" }
+                }
+              }
+            },
+            "primary_endpoints": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "number": { "type": "integer" },
+                  "description": { "type": "string" }
+                }
+              }
+            },
+            "secondary_endpoints": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "number": { "type": "integer" },
+                  "description": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "products": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "locations": {
+      "type": "object",
+      "properties": {
+        "countries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "country": { "type": "string" },
+              "status": { "type": "string" },
+              "sites": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "sponsors": {
+          "type": "object",
+          "properties": {
+            "details": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
