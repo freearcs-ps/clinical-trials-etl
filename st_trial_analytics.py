@@ -21,6 +21,7 @@ from pymongo import MongoClient
 import json
 import logging
 import time
+import ssl
 
 # Définition des couleurs de l'entreprise pour une utilisation cohérente
 COLORS = {
@@ -135,17 +136,69 @@ class TrialAnalytics:
         self.collection = None
 
     def connect(self):
-        """Établit la connexion à MongoDB."""
+        """Établit la connexion à MongoDB avec gestion SSL améliorée."""
         try:
-            self.client = MongoClient(self.uri, serverSelectionTimeoutMS=5000)
+            # Configuration SSL spécifique pour Streamlit Cloud
+            import ssl
+
+            # Options de connexion avec SSL/TLS robuste
+            client_options = {
+                "serverSelectionTimeoutMS": 30000,  # Augmenter le timeout
+                "connectTimeoutMS": 30000,
+                "socketTimeoutMS": 30000,
+                "maxPoolSize": 10,
+                "retryWrites": True,
+                "w": "majority",
+                # Configuration SSL explicite
+                "ssl": True,
+                "ssl_cert_reqs": ssl.CERT_NONE,  # Désactiver la vérification des certificats
+                "ssl_match_hostname": False,
+                "tlsAllowInvalidCertificates": True,
+                "tlsAllowInvalidHostnames": True,
+                # Forcer TLS 1.2+
+                "tlsInsecure": True,
+            }
+
+            self.client = MongoClient(self.uri, **client_options)
             self.db = self.client[self.database]
             self.collection = self.db.trials  # Nom de collection correct
-            # Test de la connexion
-            self.client.admin.command("ismaster")
+
+            # Test de la connexion avec un timeout plus long
+            self.client.admin.command("ping")
             return True
+
         except Exception as e:
             st.error(f"Erreur de connexion MongoDB: {e}")
-            return False
+
+            # Essayer une connexion de secours avec paramètres simplifiés
+            try:
+                st.info("🔄 Tentative de connexion de secours...")
+
+                # URI modifiée avec paramètres SSL explicites
+                fallback_uri = self.uri
+                if "?" in fallback_uri:
+                    fallback_uri += "&ssl=true&ssl_cert_reqs=CERT_NONE&tlsAllowInvalidCertificates=true"
+                else:
+                    fallback_uri += "?ssl=true&ssl_cert_reqs=CERT_NONE&tlsAllowInvalidCertificates=true"
+
+                fallback_options = {
+                    "serverSelectionTimeoutMS": 30000,
+                    "connectTimeoutMS": 30000,
+                    "socketTimeoutMS": 30000,
+                }
+
+                self.client = MongoClient(fallback_uri, **fallback_options)
+                self.db = self.client[self.database]
+                self.collection = self.db.trials
+
+                # Test de la connexion
+                self.client.admin.command("ping")
+                st.success("✅ Connexion de secours réussie!")
+                return True
+
+            except Exception as fallback_error:
+                st.error(f"Erreur de connexion de secours: {fallback_error}")
+                return False
 
     def disconnect(self):
         """Ferme la connexion MongoDB."""
