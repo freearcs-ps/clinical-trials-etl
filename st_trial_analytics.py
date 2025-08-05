@@ -137,62 +137,61 @@ class TrialAnalytics:
     def connect(self):
         """Établit la connexion à MongoDB avec gestion SSL améliorée."""
         try:
-            # Options de connexion avec TLS/SSL robuste (pymongo 4.x+)
+            # Configuration TLS optimale pour MongoDB Atlas (pymongo 4.x+)
             client_options = {
-                "serverSelectionTimeoutMS": 30000,  # Augmenter le timeout
+                "serverSelectionTimeoutMS": 30000,
                 "connectTimeoutMS": 30000,
                 "socketTimeoutMS": 30000,
                 "maxPoolSize": 10,
                 "retryWrites": True,
                 "w": "majority",
-                # Configuration TLS moderne pour pymongo 4.x+
+                # Configuration TLS pour MongoDB Atlas
                 "tls": True,
                 "tlsAllowInvalidCertificates": True,
-                "tlsAllowInvalidHostnames": True,
-                "tlsInsecure": True,
+                # Suppression de tlsInsecure pour éviter le conflit
             }
 
             self.client = MongoClient(self.uri, **client_options)
             self.db = self.client[self.database]
-            self.collection = self.db.trials  # Nom de collection correct
+            self.collection = self.db.trials
 
-            # Test de la connexion avec un timeout plus long
+            # Test de la connexion
             self.client.admin.command("ping")
+            st.success("✅ Connexion MongoDB réussie!")
             return True
 
         except Exception as e:
             st.error(f"Erreur de connexion MongoDB: {e}")
 
-            # Essayer une connexion de secours avec paramètres simplifiés
+            # Essayer une connexion avec options TLS minimales
             try:
-                st.info("🔄 Tentative de connexion de secours...")
+                st.info("🔄 Tentative avec options TLS minimales...")
 
-                # Options de connexion simplifiées
-                fallback_options = {
+                minimal_tls_options = {
                     "serverSelectionTimeoutMS": 30000,
                     "connectTimeoutMS": 30000,
-                    "socketTimeoutMS": 30000,
-                    "tlsAllowInvalidCertificates": True,
+                    "tls": True,
                 }
 
-                self.client = MongoClient(self.uri, **fallback_options)
+                self.client = MongoClient(self.uri, **minimal_tls_options)
                 self.db = self.client[self.database]
                 self.collection = self.db.trials
 
                 # Test de la connexion
                 self.client.admin.command("ping")
-                st.success("✅ Connexion de secours réussie!")
+                st.success("✅ Connexion TLS minimale réussie!")
                 return True
 
-            except Exception as fallback_error:
-                st.error(f"Erreur de connexion de secours: {fallback_error}")
+            except Exception as minimal_error:
+                st.error(f"Erreur connexion TLS minimale: {minimal_error}")
 
-                # Dernière tentative avec connexion basique
+                # Dernière tentative avec URI direct (laisse MongoDB gérer TLS)
                 try:
-                    st.info("🔄 Dernière tentative avec connexion basique...")
+                    st.info("🔄 Dernière tentative avec URI direct...")
 
                     basic_options = {
                         "serverSelectionTimeoutMS": 30000,
+                        "connectTimeoutMS": 30000,
                     }
 
                     self.client = MongoClient(self.uri, **basic_options)
@@ -201,11 +200,13 @@ class TrialAnalytics:
 
                     # Test de la connexion
                     self.client.admin.command("ping")
-                    st.success("✅ Connexion basique réussie!")
+                    st.success("✅ Connexion URI direct réussie!")
                     return True
 
                 except Exception as basic_error:
-                    st.error(f"Erreur de connexion basique: {basic_error}")
+                    st.error(
+                        f"❌ Toutes les tentatives de connexion ont échoué: {basic_error}"
+                    )
                     return False
 
     def disconnect(self):
