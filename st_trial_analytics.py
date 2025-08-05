@@ -21,6 +21,16 @@ from pymongo import MongoClient
 import json
 import logging
 import time
+import os
+import sys
+import re
+import numpy as np
+from collections import Counter
+from datetime import datetime, timedelta
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Definition of company colors for consistent use
 COLORS = {
@@ -52,20 +62,8 @@ EMAIL = "Email"
 ADDRESS = "Address"
 POSTAL_CODE = "Postal Code"
 SITES = "Sites"
-from datetime import datetime, timedelta
-import numpy as np
-from collections import Counter
-import re
-import os
-import sys
 
-
-import logging
-from datetime import datetime
-import pymongo
-
-
-# Page configuration
+# Logging configuration
 st.set_page_config(
     page_title="Clinical Trials Analyzer",
     page_icon="🔬",
@@ -965,153 +963,87 @@ def display_overview_dashboard(analytics):
         )
         st.plotly_chart(fig, use_container_width=True)
 
-    # Contacts from all trials
-    st.subheader("📞 All Trial Site Contacts")
-    with st.spinner("Extracting all contacts..."):
+    # Reference to dedicated contacts page
+    st.subheader("📞 Trial Site Contacts")
+
+    # Quick preview with contact count
+    with st.spinner("Loading contact summary..."):
         all_contacts = analytics.get_all_contacts()
 
     if all_contacts:
-        st.write(f"**{len(all_contacts)} contact(s) found in the database:**")
-
-        # Create contact DataFrame
-        contacts_df = pd.DataFrame(all_contacts)
-
-        # Reorganize columns for better display
-        columns_order = [
-            "EUCT Number",
-            "Trial Title",
-            "Country",
-            "Site",
-            "City",
-            "Department",
-            "Title",
-            "First Name",
-            "Last Name",
-            "Phone",
-            "Email",
-            "Address",
-            "Postal Code",
-        ]
-
-        # Ensure all columns exist
-        for col in columns_order:
-            if col not in contacts_df.columns:
-                contacts_df[col] = ""
-
-        contacts_df = contacts_df[columns_order]
-
-        # Filter by country to improve user experience
-        col1, col2, col3 = st.columns([1, 1, 2])
-
-        with col1:
-            # Filter by country
-            unique_countries = sorted(contacts_df["Country"].unique().tolist())
-            selected_country = st.selectbox(
-                "Filter by country:",
-                ["All"] + unique_countries,
-                key="contact_country_filter",
-            )
-
-        with col2:
-            # Filter by number of entries to display
-            display_limit = st.selectbox(
-                "Number of entries:",
-                [50, 100, 200, 500, "All"],
-                index=1,
-                key="contact_display_limit",
-            )
-
-        with col3:
-            # Search by name/email
-            search_term = st.text_input(
-                "Search (name, email, site):", key="contact_search"
-            )
-
-        # Apply filters
-        filtered_df = contacts_df.copy()
-
-        if selected_country != "All":
-            filtered_df = filtered_df[filtered_df["Country"] == selected_country]
-
-        if search_term:
-            # Search in multiple columns
-            search_mask = (
-                filtered_df["Last Name"].str.contains(search_term, case=False, na=False)
-                | filtered_df["First Name"].str.contains(
-                    search_term, case=False, na=False
-                )
-                | filtered_df["Email"].str.contains(search_term, case=False, na=False)
-                | filtered_df["Site"].str.contains(search_term, case=False, na=False)
-            )
-            filtered_df = filtered_df[search_mask]
-
-        if display_limit != "All":
-            filtered_df = filtered_df.head(int(display_limit))
-
-        # Display DataFrame with sorting possibility
-        st.dataframe(
-            filtered_df,
-            use_container_width=True,
-            height=min(500, len(filtered_df) * 35 + 100),  # Dynamic height
-            column_config={
-                "EUCT Number": st.column_config.TextColumn("EUCT", width="medium"),
-                "Trial Title": st.column_config.TextColumn("Trial", width="large"),
-                "Email": st.column_config.TextColumn("Email", width="medium"),
-                "Phone": st.column_config.TextColumn("Phone", width="medium"),
-                "Site": st.column_config.TextColumn("Site", width="large"),
-                "Address": st.column_config.TextColumn("Address", width="large"),
-            },
+        # Summary metrics in a styled container
+        st.markdown(
+            f"""
+        <div style="background-color:{COLORS['accent']}; padding:20px; border-radius:10px; margin:10px 0px 20px 0px; border-left: 5px solid {COLORS['highlight']};">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <h4 style="margin:0; color:{COLORS['primary']};">📍 Contact Database Available</h4>
+                    <p style="margin:5px 0 0 0; color:{COLORS['text']}; font-size:14px;">
+                        {len(all_contacts)} contacts from trial sites across the database
+                    </p>
+                </div>
+                <div style="text-align:center;">
+                    <div style="background-color:{COLORS['primary']}; color:white; padding:10px 20px; border-radius:20px; font-weight:bold; font-size:18px;">
+                        {len(all_contacts)}
+                    </div>
+                    <small style="color:{COLORS['text']};">Total Contacts</small>
+                </div>
+            </div>
+        </div>
+        """,
+            unsafe_allow_html=True,
         )
 
-        # Contact statistics
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.metric("Total contacts", len(all_contacts))
+        # Navigation button to dedicated page
+        st.markdown(
+            f"""
+        <div style="text-align:center; margin:15px 0;">
+            <p style="color:{COLORS['text']}; margin-bottom:10px;">
+                💡 <strong>For advanced search, filtering, and export features, visit the dedicated contacts page:</strong>
+            </p>
+        </div>
+        """,
+            unsafe_allow_html=True,
+        )
+
+        # Center the button with custom styling
+        col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            st.metric("Displayed contacts", len(filtered_df))
-        with col3:
-            contacts_with_email = len(filtered_df[filtered_df["Email"] != ""])
-            st.metric("With email", contacts_with_email)
-        with col4:
-            contacts_with_phone = len(filtered_df[filtered_df["Phone"] != ""])
-            st.metric("With phone", contacts_with_phone)
-
-        # Download option
-        col1, col2 = st.columns([1, 3])
-        with col1:
-            # Use a div container to apply CSS class to button
-            with st.container():
-                st.markdown(
-                    """
-                <style>
-                    div[data-testid="stButton"]:nth-of-type(1) > button {
-                        background-color: """
-                    + COLORS["highlight"]
-                    + """;
-                        color: white;
-                    }
-                </style>
-                """,
-                    unsafe_allow_html=True,
-                )
-
-                if st.button("💾 Download contacts (CSV)", key="download_all_contacts"):
-                    csv = filtered_df.to_csv(index=False)
-                    st.download_button(
-                        label="📥 Download CSV",
-                        data=csv,
-                        file_name=f"all_trial_contacts_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                        mime="text/csv",
-                        key="download_csv_all_contacts",
-                    )
-
-        with col2:
-            st.caption(
-                "💡 Use filters to refine your search. Click on column headers to sort data."
+            st.markdown(
+                f"""
+            <style>
+                div[data-testid="stButton"] > button {{
+                    background-color: {COLORS['primary']};
+                    color: white;
+                    font-weight: bold;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 25px;
+                    font-size: 16px;
+                    width: 100%;
+                    transition: all 0.3s ease;
+                }}
+                div[data-testid="stButton"] > button:hover {{
+                    background-color: {COLORS['secondary']};
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                }}
+            </style>
+            """,
+                unsafe_allow_html=True,
             )
 
+            if st.button(
+                "📞 View Complete Contact Directory →", key="goto_contacts_page"
+            ):
+                st.info(
+                    "💡 Please use the 'Trial Site Contacts' option in the navigation menu to access the full contact directory with advanced features."
+                )
+
     else:
-        st.info("No contacts found in the database.")
+        st.info(
+            "No contacts found in the database. Check the 'Trial Site Contacts' page for more details."
+        )
 
 
 def display_advanced_search(analytics):
@@ -2000,6 +1932,7 @@ def main():
         "Advanced Search": "🔍",
         "Advanced Analytics": "📈",
         "Individual Analysis": "🔍",
+        "Trial Site Contacts": "📞",
         "Custom Queries": "⚙️",
     }
 
@@ -2024,6 +1957,8 @@ def main():
             display_analytics_dashboard(analytics)
         elif selected_page == "Individual Analysis":
             display_individual_trial_analysis(analytics)
+        elif selected_page == "Trial Site Contacts":
+            display_trial_site_contacts(analytics)
         elif selected_page == "Custom Queries":
             display_custom_queries(analytics)
 
@@ -2083,6 +2018,307 @@ def main():
     """,
         unsafe_allow_html=True,
     )
+
+
+def display_trial_site_contacts(analytics):
+    """Displays the dedicated trial site contacts page."""
+    st.header("📞 Trial Site Contacts")
+
+    # Add description banner
+    st.markdown(
+        f"""
+    <div style="background-color:{COLORS['primary']}; padding:15px; border-radius:10px; margin:10px 0px 20px 0px;">
+        <h4 style="color:white; margin:0; text-align:center;">📍 Comprehensive Contact Database</h4>
+        <p style="color:white; margin:5px 0 0 0; text-align:center; font-size:14px;">
+            Search and export contact information from all trial sites across the database
+        </p>
+    </div>
+    """,
+        unsafe_allow_html=True,
+    )
+
+    with st.spinner("Extracting all contacts..."):
+        all_contacts = analytics.get_all_contacts()
+
+    if all_contacts:
+        st.write(f"**{len(all_contacts)} contact(s) found in the database:**")
+
+        # Create contact DataFrame
+        contacts_df = pd.DataFrame(all_contacts)
+
+        # Reorganize columns for better display
+        columns_order = [
+            "EUCT Number",
+            "Trial Title",
+            "Country",
+            "Site",
+            "City",
+            "Department",
+            "Title",
+            "First Name",
+            "Last Name",
+            "Phone",
+            "Email",
+            "Address",
+            "Postal Code",
+        ]
+
+        # Ensure all columns exist
+        for col in columns_order:
+            if col not in contacts_df.columns:
+                contacts_df[col] = ""
+
+        contacts_df = contacts_df[columns_order]
+
+        # Enhanced filtering section with better layout
+        st.markdown("### 🔍 Filter & Search Options")
+
+        col1, col2, col3, col4 = st.columns([1, 1, 1, 2])
+
+        with col1:
+            # Filter by country
+            unique_countries = sorted(contacts_df["Country"].unique().tolist())
+            selected_country = st.selectbox(
+                "Filter by country:",
+                ["All"] + unique_countries,
+                key="contact_country_filter",
+            )
+
+        with col2:
+            # Filter by number of entries to display
+            display_limit = st.selectbox(
+                "Number of entries:",
+                [50, 100, 200, 500, 1000, "All"],
+                index=2,  # Default to 200
+                key="contact_display_limit",
+            )
+
+        with col3:
+            # Filter by contact type
+            contact_filter = st.selectbox(
+                "Contact type:",
+                ["All", "With Email", "With Phone", "Complete Info"],
+                key="contact_type_filter",
+            )
+
+        with col4:
+            # Search by name/email
+            search_term = st.text_input(
+                "Search (name, email, site, EUCT):", key="contact_search"
+            )
+
+        # Apply filters
+        filtered_df = contacts_df.copy()
+
+        if selected_country != "All":
+            filtered_df = filtered_df[filtered_df["Country"] == selected_country]
+
+        # Apply contact type filter
+        if contact_filter == "With Email":
+            filtered_df = filtered_df[filtered_df["Email"] != ""]
+        elif contact_filter == "With Phone":
+            filtered_df = filtered_df[filtered_df["Phone"] != ""]
+        elif contact_filter == "Complete Info":
+            filtered_df = filtered_df[
+                (filtered_df["Email"] != "")
+                & (filtered_df["Phone"] != "")
+                & (filtered_df["First Name"] != "")
+                & (filtered_df["Last Name"] != "")
+            ]
+
+        if search_term:
+            # Search in multiple columns including EUCT Number
+            search_mask = (
+                filtered_df["Last Name"].str.contains(search_term, case=False, na=False)
+                | filtered_df["First Name"].str.contains(
+                    search_term, case=False, na=False
+                )
+                | filtered_df["Email"].str.contains(search_term, case=False, na=False)
+                | filtered_df["Site"].str.contains(search_term, case=False, na=False)
+                | filtered_df["EUCT Number"].str.contains(
+                    search_term, case=False, na=False
+                )
+                | filtered_df["Trial Title"].str.contains(
+                    search_term, case=False, na=False
+                )
+            )
+            filtered_df = filtered_df[search_mask]
+
+        if display_limit != "All":
+            filtered_df = filtered_df.head(int(display_limit))
+
+        # Statistics section with enhanced metrics
+        st.markdown("### 📊 Contact Statistics")
+        col1, col2, col3, col4, col5 = st.columns(5)
+
+        with col1:
+            st.metric("Total contacts", len(all_contacts))
+        with col2:
+            st.metric("Displayed", len(filtered_df))
+        with col3:
+            contacts_with_email = len(filtered_df[filtered_df["Email"] != ""])
+            st.metric("With email", contacts_with_email)
+        with col4:
+            contacts_with_phone = len(filtered_df[filtered_df["Phone"] != ""])
+            st.metric("With phone", contacts_with_phone)
+        with col5:
+            unique_trials = len(filtered_df["EUCT Number"].unique())
+            st.metric("Unique trials", unique_trials)
+
+        # Display DataFrame with enhanced configuration
+        st.markdown("### 📋 Contact Directory")
+        st.dataframe(
+            filtered_df,
+            use_container_width=True,
+            height=min(
+                600, len(filtered_df) * 35 + 100
+            ),  # Larger height for contact page
+            column_config={
+                "EUCT Number": st.column_config.TextColumn("EUCT", width="medium"),
+                "Trial Title": st.column_config.TextColumn("Trial", width="large"),
+                "Email": st.column_config.TextColumn("Email", width="medium"),
+                "Phone": st.column_config.TextColumn("Phone", width="medium"),
+                "Site": st.column_config.TextColumn("Site", width="large"),
+                "Address": st.column_config.TextColumn("Address", width="large"),
+                "Country": st.column_config.TextColumn("Country", width="small"),
+                "City": st.column_config.TextColumn("City", width="small"),
+            },
+        )
+
+        # Enhanced download and export options
+        st.markdown("### 💾 Export Options")
+        col1, col2, col3 = st.columns([1, 1, 2])
+
+        with col1:
+            if st.button(
+                "📥 Download Filtered Results (CSV)", key="download_filtered_contacts"
+            ):
+                csv = filtered_df.to_csv(index=False)
+                st.download_button(
+                    label="📋 Get CSV File",
+                    data=csv,
+                    file_name=f"filtered_trial_contacts_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv",
+                    key="download_csv_filtered_contacts",
+                )
+
+        with col2:
+            if st.button("📧 Download Email List Only", key="download_emails_only"):
+                # Create email-only DataFrame
+                email_df = filtered_df[filtered_df["Email"] != ""][
+                    [
+                        "EUCT Number",
+                        "Trial Title",
+                        "Country",
+                        "Site",
+                        "First Name",
+                        "Last Name",
+                        "Email",
+                    ]
+                ]
+                email_csv = email_df.to_csv(index=False)
+                st.download_button(
+                    label="📧 Get Email CSV",
+                    data=email_csv,
+                    file_name=f"trial_emails_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv",
+                    key="download_csv_emails_only",
+                )
+
+        with col3:
+            st.caption(
+                "💡 **Tips:** Use filters to refine your search. Click column headers to sort. "
+                "Search supports partial matches across multiple fields including EUCT numbers and trial titles."
+            )
+
+        # Additional insights section
+        if len(filtered_df) > 0:
+            st.markdown("### 🌍 Geographic Distribution")
+            col1, col2 = st.columns(2)
+
+            with col1:
+                # Country distribution chart
+                country_counts = filtered_df["Country"].value_counts().head(10)
+                if len(country_counts) > 0:
+                    fig = px.bar(
+                        x=country_counts.values,
+                        y=country_counts.index,
+                        orientation="h",
+                        title="Top 10 Countries by Contact Count",
+                        color=country_counts.values,
+                        color_continuous_scale=[
+                            [0, COLORS["accent"]],
+                            [0.5, COLORS["secondary"]],
+                            [1, COLORS["highlight"]],
+                        ],
+                    )
+                    fig.update_layout(
+                        yaxis={"categoryorder": "total ascending"},
+                        title_font_color=COLORS["primary"],
+                        font_color=COLORS["text"],
+                        paper_bgcolor=COLORS["background"],
+                        plot_bgcolor=COLORS["background"],
+                        coloraxis_showscale=False,
+                        height=400,
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+
+            with col2:
+                # Contact completeness analysis
+                contact_completeness = []
+                total_filtered = len(filtered_df)
+
+                categories = [
+                    (
+                        "Complete Profile",
+                        (filtered_df["Email"] != "")
+                        & (filtered_df["Phone"] != "")
+                        & (filtered_df["First Name"] != "")
+                        & (filtered_df["Last Name"] != ""),
+                    ),
+                    (
+                        "Email Only",
+                        (filtered_df["Email"] != "") & (filtered_df["Phone"] == ""),
+                    ),
+                    (
+                        "Phone Only",
+                        (filtered_df["Phone"] != "") & (filtered_df["Email"] == ""),
+                    ),
+                    (
+                        "Basic Info Only",
+                        (filtered_df["Email"] == "") & (filtered_df["Phone"] == ""),
+                    ),
+                ]
+
+                for category, condition in categories:
+                    count = len(filtered_df[condition])
+                    contact_completeness.append({"Category": category, "Count": count})
+
+                if contact_completeness:
+                    completeness_df = pd.DataFrame(contact_completeness)
+                    fig = px.pie(
+                        completeness_df,
+                        values="Count",
+                        names="Category",
+                        title="Contact Information Completeness",
+                        color_discrete_sequence=[
+                            COLORS["primary"],
+                            COLORS["secondary"],
+                            COLORS["accent"],
+                            COLORS["highlight"],
+                        ],
+                    )
+                    fig.update_traces(textposition="inside", textinfo="percent+label")
+                    fig.update_layout(
+                        title_font_color=COLORS["primary"],
+                        font_color=COLORS["text"],
+                        paper_bgcolor=COLORS["background"],
+                        height=400,
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+
+    else:
+        st.info("No contacts found in the database.")
 
 
 if __name__ == "__main__":
