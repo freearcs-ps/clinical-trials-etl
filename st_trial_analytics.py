@@ -135,76 +135,45 @@ class TrialAnalytics:
         self.collection = None
 
     def connect(self):
-        """Établit la connexion à MongoDB avec gestion SSL/TLS robuste."""
-        # Liste des stratégies de connexion à essayer
-        connection_strategies = [
-            {
-                "name": "Configuration TLS standard",
-                "options": {
-                    "serverSelectionTimeoutMS": 30000,
-                    "connectTimeoutMS": 30000,
-                    "socketTimeoutMS": 30000,
-                    "retryWrites": True,
-                    "w": "majority",
-                },
-            },
-            {
-                "name": "Configuration TLS avec certificats flexibles",
-                "options": {
-                    "serverSelectionTimeoutMS": 30000,
-                    "connectTimeoutMS": 30000,
-                    "tls": True,
-                    "tlsAllowInvalidCertificates": True,
-                },
-            },
-            {
-                "name": "Configuration TLS insecure",
-                "options": {
-                    "serverSelectionTimeoutMS": 30000,
-                    "connectTimeoutMS": 30000,
-                    "tlsInsecure": True,
-                },
-            },
-            {
-                "name": "Configuration basique sans TLS explicite",
-                "options": {
-                    "serverSelectionTimeoutMS": 30000,
-                    "connectTimeoutMS": 30000,
-                },
-            },
-        ]
+        """Établit la connexion à MongoDB."""
+        try:
+            # Configuration optimisée pour MongoDB Atlas
+            connection_options = {
+                "serverSelectionTimeoutMS": 30000,
+                "connectTimeoutMS": 30000,
+                "socketTimeoutMS": 30000,
+                "retryWrites": True,
+                "w": "majority",
+            }
 
-        for strategy in connection_strategies:
+            self.client = MongoClient(self.uri, **connection_options)
+            self.db = self.client[self.database]
+            self.collection = self.db.trials
+
+            # Test de la connexion
+            self.client.admin.command("ping")
+            return True
+
+        except Exception as e:
+            # En cas d'erreur, essayer une connexion basique
             try:
-                st.info(f"🔄 Tentative: {strategy['name']}...")
-
-                self.client = MongoClient(self.uri, **strategy["options"])
+                self.client = MongoClient(
+                    self.uri,
+                    serverSelectionTimeoutMS=30000,
+                    connectTimeoutMS=30000,
+                )
                 self.db = self.client[self.database]
                 self.collection = self.db.trials
-
-                # Test de la connexion avec timeout court
                 self.client.admin.command("ping")
-                st.success(f"✅ Connexion réussie avec: {strategy['name']}")
                 return True
-
-            except Exception as e:
-                st.warning(f"❌ Échec {strategy['name']}: {str(e)[:200]}...")
-                # Fermer le client en cas d'échec
+            except Exception:
+                logger.error(f"Erreur de connexion MongoDB: {str(e)}")
                 if hasattr(self, "client") and self.client:
                     try:
                         self.client.close()
                     except:
                         pass
-                continue
-
-        # Si toutes les stratégies échouent
-        st.error("❌ Toutes les tentatives de connexion ont échoué")
-        st.error("💡 Suggestions:")
-        st.error("   1. Vérifiez que votre cluster MongoDB Atlas est actif")
-        st.error("   2. Vérifiez les informations d'authentification dans votre URI")
-        st.error("   3. Vérifiez que votre IP est autorisée dans MongoDB Atlas")
-        st.error("   4. Essayez de redémarrer votre cluster MongoDB Atlas")
-        return False
+                return False
 
     def disconnect(self):
         """Ferme la connexion MongoDB."""
@@ -628,10 +597,8 @@ def get_mongodb_connection_params():
         database = os.getenv("MONGODB_DATABASE", "clinical_trials_db")
 
         if not uri:
-            st.error("⚠️ Paramètres de connexion MongoDB manquants!")
-            st.error(
-                "Veuillez configurer MONGODB_URI dans les secrets Streamlit ou les variables d'environnement."
-            )
+            # Log l'erreur sans affichage utilisateur
+            logger.error("MONGODB_URI manquante dans la configuration")
             st.stop()
 
     return uri, database
@@ -643,8 +610,12 @@ def test_mongodb_connection(uri, database):
     Returns:
         bool: True si la connexion a réussi, False sinon.
     """
-    analytics = TrialAnalytics(uri, database)
-    return analytics.connect()
+    try:
+        analytics = TrialAnalytics(uri, database)
+        return analytics.connect()
+    except Exception as e:
+        logger.error(f"Erreur de test de connexion: {str(e)}")
+        return False
 
 
 def create_sidebar():
@@ -2015,10 +1986,8 @@ def main():
     # Test de connexion silencieux au démarrage
     connection_status = test_mongodb_connection(uri, database)
     if not connection_status:
-        st.sidebar.error(
-            "⚠️ Connexion à la base de données impossible. Veuillez contacter votre administrateur système.",
-            icon="⚠️",
-        )
+        # Log du problème sans affichage utilisateur
+        logger.warning("Connexion MongoDB impossible lors du test initial")
 
     # Navigation
     st.sidebar.markdown("---")
@@ -2041,7 +2010,7 @@ def main():
 
     if not analytics.connect():
         st.error(
-            "❌ Impossible de se connecter à MongoDB. Vérifiez vos paramètres de connexion."
+            "❌ Service temporairement indisponible. Veuillez réessayer plus tard."
         )
         st.stop()
 
