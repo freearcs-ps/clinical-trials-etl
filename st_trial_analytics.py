@@ -38,6 +38,13 @@ import re
 import os
 import sys
 
+
+import logging
+from datetime import datetime
+from typing import Dict, List, Optional, Any
+import pymongo
+
+
 # Configuration de la page
 st.set_page_config(
     page_title="Analyseur d'Essais Cliniques",
@@ -115,12 +122,6 @@ logger = logging.getLogger(__name__)
 
 # Ajout du répertoire parent au path pour les imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-try:
-    from trials_extractor.storage.mongodb_storage import MongoDBStorage
-except ImportError:
-    st.error("Module MongoDBStorage non trouvé. Vérifiez l'installation.")
-    st.stop()
 
 
 class TrialAnalytics:
@@ -224,7 +225,7 @@ class TrialAnalytics:
                 total_conditions_result[0]["total"] if total_conditions_result else 0
             )
             # Mise à jour des conditions pour inclure le total
-            
+
             # Récupération du nombre de domaines thérapeutiques uniques
             total_therapeutic_areas = self.get_therapeutic_areas_count()
 
@@ -352,7 +353,7 @@ class TrialAnalytics:
                     }
                 },
                 {"$match": {"_id": {"$ne": None}}},  # Exclure les valeurs nulles
-                {"$count": "total"}
+                {"$count": "total"},
             ]
 
             result = list(self.collection.aggregate(pipeline))
@@ -551,12 +552,29 @@ class TrialAnalytics:
 
 
 def get_mongodb_connection_params():
-    """Retourne les paramètres de connexion MongoDB par défaut.
+    """Retourne les paramètres de connexion MongoDB depuis les variables d'environnement.
 
-    Ces valeurs sont définies en dur dans le code et ne sont pas exposées à l'utilisateur.
+    Ces valeurs sont récupérées depuis les secrets Streamlit ou les variables d'environnement
+    pour sécuriser les informations de connexion.
     """
-    uri = "mongodb+srv://fpstrialsdata:7XSdo0HZmjkIvfO3@cluster0.exmmrta.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-    database = "clinical_trials_db"
+    try:
+        # Tentative de récupération depuis les secrets Streamlit Cloud
+        uri = st.secrets["MONGODB_URI"]
+        database = st.secrets["MONGODB_DATABASE"]
+    except (KeyError, FileNotFoundError):
+        # Fallback vers les variables d'environnement pour le développement local
+        import os
+
+        uri = os.getenv("MONGODB_URI", "")
+        database = os.getenv("MONGODB_DATABASE", "clinical_trials_db")
+
+        if not uri:
+            st.error("⚠️ Paramètres de connexion MongoDB manquants!")
+            st.error(
+                "Veuillez configurer MONGODB_URI dans les secrets Streamlit ou les variables d'environnement."
+            )
+            st.stop()
+
     return uri, database
 
 
@@ -744,7 +762,7 @@ def display_overview_dashboard(analytics):
 
     # Espace après les métriques
     st.markdown("<div style='padding: 15px;'></div>", unsafe_allow_html=True)
-    
+
     # Ajout d'une nouvelle rangée pour les domaines thérapeutiques
     st.markdown(
         """
@@ -752,7 +770,7 @@ def display_overview_dashboard(analytics):
     """,
         unsafe_allow_html=True,
     )
-    
+
     # Affichage du KPI pour les domaines thérapeutiques
     total_therapeutic_areas = stats.get("total_therapeutic_areas", 0)
     st.markdown(
@@ -765,15 +783,15 @@ def display_overview_dashboard(analytics):
     """,
         unsafe_allow_html=True,
     )
-    
+
     # # Récupération des données des domaines thérapeutiques
     # therapeutic_areas = analytics.get_therapeutic_areas_distribution()
-    
+
     # # Création d'une nouvelle ligne de colonnes
     # area_col1, area_spacer1, area_col2, area_spacer2, area_col3 = st.columns(
     #     [10, 0.5, 10, 0.5, 10]
     # )
-    
+
     # # Affichage des domaines thérapeutiques (top 3)
     # if therapeutic_areas:
     #     for i, (col, area) in enumerate(zip([area_col1, area_col2, area_col3], therapeutic_areas[:3])):
@@ -782,10 +800,10 @@ def display_overview_dashboard(analytics):
     #             # Tronquer le nom s'il est trop long
     #             if len(area_name) > 40:
     #                 area_name = area_name[:37] + "..."
-                    
+
     #             area_count = area["count"]
     #             icon = "🔬"  # Icône par défaut
-                
+
     #             # Attribution d'icônes en fonction des mots-clés dans le nom
     #             if "Neoplasms" in area_name or "Cancer" in area_name:
     #                 icon = "🩺"
@@ -797,7 +815,7 @@ def display_overview_dashboard(analytics):
     #                 icon = "🛡️"
     #             elif "Digestive" in area_name:
     #                 icon = "🧪"
-                    
+
     #             st.markdown(
     #                 f"""
     #             <div class="metric-card">
@@ -823,21 +841,21 @@ def display_overview_dashboard(analytics):
 
             # Create a custom color sequence that uses all 4 colors from the palette
             color_sequence = [
-                COLORS["primary"],    # Marron/Gris foncé
-                COLORS["secondary"],   # Vert forêt/Vert foncé
-                COLORS["accent"],      # Vert herbe/Vert clair
-                COLORS["highlight"],   # Orange vif/Rouge-orange
+                COLORS["primary"],  # Marron/Gris foncé
+                COLORS["secondary"],  # Vert forêt/Vert foncé
+                COLORS["accent"],  # Vert herbe/Vert clair
+                COLORS["highlight"],  # Orange vif/Rouge-orange
             ]
-            
+
             # For more than 4 phases, create a pattern with these colors
             extended_colors = color_sequence * (len(phases_df) // 4 + 1)
-            
+
             fig = px.pie(
                 phases_df,
                 values="count",
                 names="_id",
                 title="Répartition des essais par phase",
-                color_discrete_sequence=extended_colors[:len(phases_df)],
+                color_discrete_sequence=extended_colors[: len(phases_df)],
             )
             fig.update_traces(textposition="inside", textinfo="percent+label")
             fig.update_layout(
