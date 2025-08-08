@@ -758,7 +758,6 @@ def display_overview_dashboard(analytics):
         st.markdown(
             f"""
         <div class="metric-card">
-            <div class="metric-icon">📋</div>
             <div class="metric-value">{stats["total_trials"]}</div>
             <div class="metric-label">Total Trials</div>
         </div>
@@ -772,7 +771,6 @@ def display_overview_dashboard(analytics):
         st.markdown(
             f"""
         <div class="metric-card">
-            <div class="metric-icon">🏥</div>
             <div class="metric-value">{total_conditions}</div>
             <div class="metric-label">Medical Conditions</div>
         </div>
@@ -786,7 +784,6 @@ def display_overview_dashboard(analytics):
         st.markdown(
             f"""
         <div class="metric-card">
-            <div class="metric-icon">🌍</div>
             <div class="metric-value">{total_countries}</div>
             <div class="metric-label">Countries Involved</div>
         </div>
@@ -800,7 +797,6 @@ def display_overview_dashboard(analytics):
         st.markdown(
             f"""
         <div class="metric-card">
-            <div class="metric-icon">🧪</div>
             <div class="metric-value">{phases_count}</div>
             <div class="metric-label">Different Phases</div>
         </div>
@@ -814,7 +810,6 @@ def display_overview_dashboard(analytics):
         st.markdown(
             f"""
         <div class="metric-card">
-            <div class="metric-icon">🧬</div>
             <div class="metric-value">{total_therapeutic_areas}</div>
             <div class="metric-label">Therapeutic Areas</div>
         </div>
@@ -931,9 +926,9 @@ def display_overview_dashboard(analytics):
 
             # Explanatory note
             total_countries = stats.get("total_countries", len(stats["countries"]))
-            st.caption(
-                f"💡 Displaying top 10 out of {total_countries} countries total. See 'Advanced Analytics' section for complete list."
-            )
+            # st.caption(
+            #     f"💡 Displaying top 10 out of {total_countries} countries total. See 'Advanced Analytics' section for complete list."
+            # )
 
     # Medical conditions
     st.subheader("Top 10 Medical Conditions")
@@ -964,7 +959,7 @@ def display_overview_dashboard(analytics):
         st.plotly_chart(fig, use_container_width=True)
 
     # Reference to dedicated contacts page
-    st.subheader("📞 Trial Site Contacts")
+    st.subheader("Trial Site Contacts")
 
     # Quick preview with contact count
     with st.spinner("Loading contact summary..."):
@@ -999,7 +994,7 @@ def display_overview_dashboard(analytics):
             f"""
         <div style="text-align:center; margin:15px 0;">
             <p style="color:{COLORS['text']}; margin-bottom:10px;">
-                💡 <strong>For advanced search, filtering, and export features, visit the dedicated contacts page:</strong>
+                <strong>For advanced search, filtering, and export features, visit the dedicated contacts page.</strong>
             </p>
         </div>
         """,
@@ -1033,12 +1028,12 @@ def display_overview_dashboard(analytics):
                 unsafe_allow_html=True,
             )
 
-            if st.button(
-                "📞 View Complete Contact Directory →", key="goto_contacts_page"
-            ):
-                st.info(
-                    "💡 Please use the 'Trial Site Contacts' option in the navigation menu to access the full contact directory with advanced features."
-                )
+            # if st.button(
+            #     "📞 View Complete Contact Directory →", key="goto_contacts_page"
+            # ):
+                # st.info(
+                #     "💡 Please use the 'Trial Site Contacts' option in the navigation menu to access the full contact directory with advanced features."
+                # )
 
     else:
         st.info(
@@ -1048,7 +1043,7 @@ def display_overview_dashboard(analytics):
 
 def display_advanced_search(analytics):
     """Displays the advanced search interface."""
-    st.header("🔍 Advanced Search")
+    st.header("Advanced Search")
 
     # Search form
     with st.form("advanced_search"):
@@ -1060,11 +1055,11 @@ def display_advanced_search(analytics):
                 [
                     "All",
                     "Phase I",
+                    "Phase I/II",
                     "Phase II",
+                    "Phase II/III",
                     "Phase III",
                     "Phase IV",
-                    "Phase I/II",
-                    "Phase II/III",
                 ],
             )
 
@@ -1171,7 +1166,7 @@ def display_advanced_search(analytics):
 
 def display_analytics_dashboard(analytics):
     """Displays the advanced analytics dashboard."""
-    st.header("📈 Advanced Analytics")
+    # st.header("📈 Advanced Analytics")
 
     # Trial timeline
     st.subheader("📅 Trial Timeline")
@@ -1408,10 +1403,10 @@ def display_analytics_dashboard(analytics):
 
 def display_individual_trial_analysis(analytics):
     """Displays detailed analysis of an individual trial."""
-    st.header("🔍 Individual Trial Analysis")
+    st.header("Individual Trial Analysis")
 
     # Trial search interface
-    st.subheader("📋 Trial Search")
+    st.subheader("Trial Search")
 
     col1, col2 = st.columns([3, 1])
 
@@ -1424,7 +1419,7 @@ def display_individual_trial_analysis(analytics):
         )
 
     with col2:
-        search_button = st.button("🔍 Search trial")
+        search_button = st.button("Search trial")
 
     # Automatic or manual search
     if search_button or euct_number:
@@ -1457,7 +1452,7 @@ def display_trial_details(trial):
     """Displays the complete details of a trial."""
 
     # Main information
-    st.subheader("📋 Main Information")
+    st.subheader("Main Information")
 
     header = trial.get("header", {})
     summary = trial.get("summary", {})
@@ -1501,7 +1496,7 @@ def display_trial_details(trial):
         )
 
     # Trial objectives
-    st.subheader("🎯 Trial Objectives")
+    st.subheader("Trial Objectives")
 
     # Main objective is in trial_information.main_objective
     main_objective = trial_info.get("main_objective", "")
@@ -1526,7 +1521,7 @@ def display_trial_details(trial):
             st.info("No objectives specified for this trial.")
 
     # Detailed status by country
-    st.subheader("📊 Detailed Status by Country")
+    st.subheader("Detailed Status by Country")
     overall_status = summary.get("overall_trial_status", {})
     application_trial_status = overall_status.get("application_trial_status", [])
 
@@ -1579,97 +1574,97 @@ def display_trial_details(trial):
         st.info("No detailed status information available.")
 
     # Trial population
-    st.subheader("👥 Trial Population")
-    population = summary.get("population", {})
-    if population:
-        col1, col2 = st.columns(2)
+    # st.subheader("👥 Trial Population")
+    # population = summary.get("population", {})
+    # if population:
+    #     col1, col2 = st.columns(2)
 
-        with col1:
-            st.write("**Age:**", population.get("age", NOT_SPECIFIED))
-            st.write("**Gender:**", population.get("gender", NOT_SPECIFIED))
-            st.write(
-                "**Number of subjects:**",
-                population.get("number_of_subjects", NOT_SPECIFIED),
-            )
+    #     with col1:
+    #         st.write("**Age:**", population.get("age", NOT_SPECIFIED))
+    #         st.write("**Gender:**", population.get("gender", NOT_SPECIFIED))
+    #         st.write(
+    #             "**Number of subjects:**",
+    #             population.get("number_of_subjects", NOT_SPECIFIED),
+    #         )
 
-        with col2:
-            st.write("**Inclusion criteria:**")
-            inclusion = population.get("inclusion_criteria", NOT_SPECIFIED)
-            st.write(
-                inclusion[:500] + "..." if len(str(inclusion)) > 500 else inclusion
-            )
+    #     with col2:
+    #         st.write("**Inclusion criteria:**")
+    #         inclusion = population.get("inclusion_criteria", NOT_SPECIFIED)
+    #         st.write(
+    #             inclusion[:500] + "..." if len(str(inclusion)) > 500 else inclusion
+    #        )
 
     # Geolocation and sites
-    st.subheader("🌍 Geolocation and Sites")
-    locations = trial.get("locations", {})
-    countries = locations.get("countries", [])
+    # st.subheader("🌍 Geolocation and Sites")
+    # locations = trial.get("locations", {})
+    # countries = locations.get("countries", [])
 
-    if countries:
-        col1, col2 = st.columns(2)
+    # if countries:
+    #     col1, col2 = st.columns(2)
 
-        with col1:
-            st.write("**Participating countries:**")
-            countries_data = []
-            for country in countries:
-                country_name = country.get("country", NOT_SPECIFIED)
-                sites_count = country.get("competent_authority_sites", "0")
-                countries_data.append({COUNTRY: country_name, SITES: sites_count})
+    #     with col1:
+    #         st.write("**Participating countries:**")
+    #         countries_data = []
+    #         for country in countries:
+    #             country_name = country.get("country", NOT_SPECIFIED)
+    #             sites_count = country.get("competent_authority_sites", "0")
+    #             countries_data.append({COUNTRY: country_name, SITES: sites_count})
 
-            countries_df = pd.DataFrame(countries_data)
-            st.dataframe(countries_df, use_container_width=True)
+    #         countries_df = pd.DataFrame(countries_data)
+    #         st.dataframe(countries_df, use_container_width=True)
 
-        with col2:
-            if len(countries_data) > 1:
-                # Chart of sites by country
-                fig = px.bar(
-                    countries_df, x=COUNTRY, y=SITES, title="Number of sites by country"
-                )
-                fig.update_layout(xaxis_tickangle=45)
-                st.plotly_chart(fig, use_container_width=True)
+    #     with col2:
+    #         if len(countries_data) > 1:
+    #             # Chart of sites by country
+    #             fig = px.bar(
+    #                 countries_df, x=COUNTRY, y=SITES, title="Number of sites by country"
+    #             )
+    #             fig.update_layout(xaxis_tickangle=45)
+    #             st.plotly_chart(fig, use_container_width=True)
 
     # Investigational medicinal product
-    st.subheader("💊 Investigational Medicinal Product")
-    imp = summary.get("investigational_medicinal_product", {})
-    if imp:
-        col1, col2 = st.columns(2)
+    # st.subheader("💊 Investigational Medicinal Product")
+    # imp = summary.get("investigational_medicinal_product", {})
+    # if imp:
+    #     col1, col2 = st.columns(2)
 
-        with col1:
-            st.write("**Product name:**", imp.get("product_name", NOT_SPECIFIED))
-            st.write(
-                "**Active substance:**", imp.get("active_substance", NOT_SPECIFIED)
-            )
-            st.write("**ATC code:**", imp.get("atc_code", NOT_SPECIFIED))
+    #     with col1:
+    #         st.write("**Product name:**", imp.get("product_name", NOT_SPECIFIED))
+    #         st.write(
+    #             "**Active substance:**", imp.get("active_substance", NOT_SPECIFIED)
+    #         )
+    #         st.write("**ATC code:**", imp.get("atc_code", NOT_SPECIFIED))
 
-        with col2:
-            st.write(
-                "**Pharmaceutical form:**",
-                imp.get("pharmaceutical_form", NOT_SPECIFIED),
-            )
-            st.write(
-                "**Route of administration:**",
-                imp.get("route_of_administration", NOT_SPECIFIED),
-            )
-            st.write("**Concentration:**", imp.get("concentration", NOT_SPECIFIED))
+    #     with col2:
+    #         st.write(
+    #             "**Pharmaceutical form:**",
+    #             imp.get("pharmaceutical_form", NOT_SPECIFIED),
+    #         )
+    #         st.write(
+    #             "**Route of administration:**",
+    #             imp.get("route_of_administration", NOT_SPECIFIED),
+    #         )
+    #         st.write("**Concentration:**", imp.get("concentration", NOT_SPECIFIED))
 
     # Trial design
-    st.subheader("🔬 Trial Design")
-    design = summary.get("trial_design", {})
-    if design:
-        col1, col2 = st.columns(2)
+    # st.subheader("🔬 Trial Design")
+    # design = summary.get("trial_design", {})
+    # if design:
+    #     col1, col2 = st.columns(2)
 
-        with col1:
-            st.write("**Control type:**", design.get("controlled", NOT_SPECIFIED))
-            st.write("**Randomized:**", design.get("randomised", NOT_SPECIFIED))
-            st.write("**Blinded:**", design.get("blinded", NOT_SPECIFIED))
+    #     with col1:
+    #         st.write("**Control type:**", design.get("controlled", NOT_SPECIFIED))
+    #         st.write("**Randomized:**", design.get("randomised", NOT_SPECIFIED))
+    #         st.write("**Blinded:**", design.get("blinded", NOT_SPECIFIED))
 
-        with col2:
-            st.write(
-                "**Treatment groups:**", design.get("treatment_groups", NOT_SPECIFIED)
-            )
-            st.write("**Allocation:**", design.get("allocation", NOT_SPECIFIED))
+    #     with col2:
+    #         st.write(
+    #             "**Treatment groups:**", design.get("treatment_groups", NOT_SPECIFIED)
+    #         )
+    #         st.write("**Allocation:**", design.get("allocation", NOT_SPECIFIED))
 
     # Contact data
-    st.subheader("📞 Site Contacts")
+    st.subheader("Site Contacts")
 
     # Extract site contacts
     site_contacts = extract_site_contacts(trial)
@@ -1898,16 +1893,10 @@ def main():
     st.markdown(
         f"""
     <div style="background: linear-gradient(90deg, {COLORS['primary']} 0%, {COLORS['secondary']} 50%, {COLORS['highlight']} 100%); 
-                padding: 20px; border-radius: 10px; margin-bottom: 20px; display: flex; align-items: center;">
-        <div style="background-color: white; padding: 10px; border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
-            <span style="font-size: 30px;">🔬</span>
-        </div>
-        <div style="flex: 1; text-align: center;">
+                padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+        <div style="text-align: center;">
             <h1 style="color: white; margin: 0;">Clinical Trials Analyzer</h1>
             <p style="color: white; margin: 0; font-size: 16px;">Clinical trials data analysis and visualization platform</p>
-        </div>
-        <div style="background-color: white; padding: 10px; border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
-            <span style="font-size: 30px;">🧪</span>
         </div>
     </div>
     """,
@@ -1929,11 +1918,12 @@ def main():
 
     pages = {
         "Overview": "📊",
-        "Advanced Search": "🔍",
-        "Advanced Analytics": "📈",
-        "Individual Analysis": "🔍",
         "Trial Site Contacts": "📞",
-        "Custom Queries": "⚙️",
+        "Advanced Search": "🔍",
+        # "Advanced Analytics": "📈",
+        "Individual Analysis": "🔍",
+       
+        # "Custom Queries": "⚙️",
     }
 
     selected_page = st.sidebar.radio(
@@ -1953,8 +1943,8 @@ def main():
             display_overview_dashboard(analytics)
         elif selected_page == "Advanced Search":
             display_advanced_search(analytics)
-        elif selected_page == "Advanced Analytics":
-            display_analytics_dashboard(analytics)
+        # elif selected_page == "Advanced Analytics":
+        #     display_analytics_dashboard(analytics)
         elif selected_page == "Individual Analysis":
             display_individual_trial_analysis(analytics)
         elif selected_page == "Trial Site Contacts":
@@ -2022,26 +2012,27 @@ def main():
 
 def display_trial_site_contacts(analytics):
     """Displays the dedicated trial site contacts page."""
-    st.header("📞 Trial Site Contacts")
+    # st.header("📞 Trial Site Contacts")
 
     # Add description banner
-    st.markdown(
-        f"""
-    <div style="background-color:{COLORS['primary']}; padding:15px; border-radius:10px; margin:10px 0px 20px 0px;">
-        <h4 style="color:white; margin:0; text-align:center;">📍 Comprehensive Contact Database</h4>
-        <p style="color:white; margin:5px 0 0 0; text-align:center; font-size:14px;">
-            Search and export contact information from all trial sites across the database
-        </p>
-    </div>
-    """,
-        unsafe_allow_html=True,
-    )
+    # st.markdown(
+    #     f"""
+    # <div style="background-color:{COLORS['primary']}; padding:15px; border-radius:10px; margin:10px 0px 20px 0px;">
+    #     <h4 style="color:white; margin:0; text-align:center;"> Comprehensive Contact Database</h4>
+    #     <p style="color:white; margin:5px 0 0 0; text-align:center; font-size:14px;">
+    #         Search and export contact information from all trial sites across the database
+    #     </p>
+    # </div>
+    # """,
+    #     unsafe_allow_html=True,
+    # )
 
     with st.spinner("Extracting all contacts..."):
         all_contacts = analytics.get_all_contacts()
 
     if all_contacts:
         st.write(f"**{len(all_contacts)} contact(s) found in the database:**")
+        
 
         # Create contact DataFrame
         contacts_df = pd.DataFrame(all_contacts)
@@ -2071,7 +2062,7 @@ def display_trial_site_contacts(analytics):
         contacts_df = contacts_df[columns_order]
 
         # Enhanced filtering section with better layout
-        st.markdown("### 🔍 Filter & Search Options")
+        st.markdown("###  Filter & Search Options")
 
         col1, col2, col3, col4 = st.columns([1, 1, 1, 2])
 
@@ -2148,7 +2139,7 @@ def display_trial_site_contacts(analytics):
             filtered_df = filtered_df.head(int(display_limit))
 
         # Statistics section with enhanced metrics
-        st.markdown("### 📊 Contact Statistics")
+        st.markdown("### Contact Statistics")
         col1, col2, col3, col4, col5 = st.columns(5)
 
         with col1:
@@ -2166,7 +2157,7 @@ def display_trial_site_contacts(analytics):
             st.metric("Unique trials", unique_trials)
 
         # Display DataFrame with enhanced configuration
-        st.markdown("### 📋 Contact Directory")
+        st.markdown("### Contact Directory")
         st.dataframe(
             filtered_df,
             use_container_width=True,
@@ -2186,16 +2177,16 @@ def display_trial_site_contacts(analytics):
         )
 
         # Enhanced download and export options
-        st.markdown("### 💾 Export Options")
+        st.markdown("### Export Options")
         col1, col2, col3 = st.columns([1, 1, 2])
 
         with col1:
             if st.button(
-                "📥 Download Filtered Results (CSV)", key="download_filtered_contacts"
+                " Download Filtered Results (CSV)", key="download_filtered_contacts"
             ):
                 csv = filtered_df.to_csv(index=False)
                 st.download_button(
-                    label="📋 Get CSV File",
+                    label="Get CSV File",
                     data=csv,
                     file_name=f"filtered_trial_contacts_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                     mime="text/csv",
@@ -2203,7 +2194,7 @@ def display_trial_site_contacts(analytics):
                 )
 
         with col2:
-            if st.button("📧 Download Email List Only", key="download_emails_only"):
+            if st.button(" Download Email List Only", key="download_emails_only"):
                 # Create email-only DataFrame
                 email_df = filtered_df[filtered_df["Email"] != ""][
                     [
@@ -2218,7 +2209,7 @@ def display_trial_site_contacts(analytics):
                 ]
                 email_csv = email_df.to_csv(index=False)
                 st.download_button(
-                    label="📧 Get Email CSV",
+                    label="Get Email CSV",
                     data=email_csv,
                     file_name=f"trial_emails_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                     mime="text/csv",
@@ -2233,7 +2224,7 @@ def display_trial_site_contacts(analytics):
 
         # Additional insights section
         if len(filtered_df) > 0:
-            st.markdown("### 🌍 Geographic Distribution")
+            st.markdown("###  Geographic Distribution")
             col1, col2 = st.columns(2)
 
             with col1:
@@ -2316,7 +2307,6 @@ def display_trial_site_contacts(analytics):
                         height=400,
                     )
                     st.plotly_chart(fig, use_container_width=True)
-
     else:
         st.info("No contacts found in the database.")
 
